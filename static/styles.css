@@ -1,0 +1,226 @@
+/* General Styles */
+body {
+    background-color: #eef2f7;
+    font-family: "Poppins", sans-serif;
+}
+
+/* Navbar */
+.navbar {
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.15);
+    padding: 15px;
+}
+
+/* Chat Container */
+.chat-container {
+    max-width: 700px;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Chat Box */
+.chat-box {
+    height: 450px;
+    overflow-y: auto;
+    padding: 15px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Chat Messages */
+.chat-message {
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 16px;
+    max-width: 70%;
+    word-wrap: break-word;
+}
+
+/* User Message - Align Right */
+.user-message {
+    background: linear-gradient(to right, #007bff, #0056b3);
+    color: white;
+    text-align: left;
+    border-radius: 10px 10px 0 10px;
+    padding: 12px;
+    align-self: flex-end;
+}
+
+/* AI Message - Align Left */
+.ai-message {
+    background: #e9ecef;
+    color: black;
+    text-align: left;
+    border-radius: 10px 10px 10px 0;
+    padding: 12px;
+    align-self: flex-start;
+}
+
+/* Input Area */
+.input-group {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#user_input {
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 16px;
+    flex-grow: 1;
+}
+
+/* Buttons */
+.btn-custom {
+    font-size: 16px;
+    padding: 10px 15px;
+    border-radius: 10px;
+    transition: all 0.3s ease-in-out;
+    font-weight: bold;
+}
+
+.btn-custom:hover {
+    transform: scale(1.07);
+    filter: brightness(1.1);
+}
+
+/* Clear Chat Button */
+.btn-clear {
+    background-color: #dc3545;
+    color: white;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 16px;
+}
+
+.btn-clear:hover {
+    background-color: #c82333;
+}
+
+/* Audio Controls */
+.audio-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    justify-content: space-between;
+}
+
+.hear-ai-btn {
+    font-size: 14px;
+    white-space: nowrap;
+    flex-grow: 1;
+}
+
+.voiceSpeed {
+    width: 80px !important;
+    font-size: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .chat-container {
+        max-width: 95%;
+        padding: 15px;
+    }
+    .chat-box {
+        height: 400px;
+    }
+    .input-group {
+        flex-direction: column;
+        gap: 5px;
+    }
+    .btn-custom,
+    .btn-clear {
+        width: 100%;
+    }
+}
+
+/* Feedback text styling */
+#feedback_text {
+    white-space: pre-line; /* Preserve line breaks */
+    text-align: left;
+    padding: 15px;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+    border-left: 4px solid #0d6efd;
+}
+
+/* Score cards styling */
+#score_container .card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#score_container .card-header {
+    font-weight: bold;
+    background-color: white;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Progress bar animation */
+.progress-bar {
+    transition: width 1s ease-in-out;
+}
+
+/* Scores box styling */
+#scores-box {
+    background-color: #f8f9fa;
+    border-color: #dee2e6 !important;
+}
+
+#scores-box h5 {
+    color: #495057;
+    font-weight: 600;
+}
+
+/* Progress bar styling */
+.progress {
+    height: 8px;
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    background-color: #0d6efd;
+    transition: width 0.6s ease;
+}
+/* For natural flow footer */
+html,
+body {
+    height: 100%;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    flex: 1 0 auto;
+}
+
+.footer {
+    flex-shrink: 0;
+}
+
+.navbar-brand:hover {
+    transform: scale(1.02);
+    transition: transform 0.2s ease-in-out;
+}
+
+.navbar-brand i {
+    transition: transform 0.3s ease;
+}
+
+.navbar-brand:hover i {
+    transform: translateX(-3px);
+}
