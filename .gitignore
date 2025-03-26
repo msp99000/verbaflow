@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+venv/
+.env
+.env/
+
+# Database
+database/user_data.db
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Deployment
+instance/
+.webassets-cache
+
+# Temp files
+*.swp
+*.swo
+
+# Testing
+.coverage
+htmlcov/
