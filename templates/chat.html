@@ -11,24 +11,72 @@
         <link
             rel="stylesheet"
             href="{{ url_for('static', filename='styles.css') }}"
-            rel="stylesheet"
-            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         />
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-        <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script> -->
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+        />
+        <style>
+            .chat-box {
+                height: 400px;
+                overflow-y: auto;
+                border: 1px solid #ccc;
+                padding: 10px;
+                margin-bottom: 20px;
+                background-color: #f9f9f9;
+            }
+
+            .chat-message {
+                margin-bottom: 10px;
+                padding: 8px 15px;
+                border-radius: 5px;
+                max-width: 80%;
+                position: relative;
+            }
+
+            .user-message {
+                background-color: #dcf8c6;
+                margin-left: auto;
+                margin-right: 0;
+                text-align: right;
+            }
+
+            .ai-message {
+                background-color: #eaeaea;
+                margin-right: auto;
+                margin-left: 0;
+                position: relative;
+                width: fit-content;
+                max-width: 80%;
+            }
+
+            .error-message {
+                background-color: #ffcccc;
+                margin-right: auto;
+                margin-left: 0;
+            }
+
+            .speak-button {
+                padding: 5px 10px;
+                margin-left: 8px;
+                font-size: 0.9em;
+                border-radius: 15px;
+                white-space: nowrap;
+            }
+
+            .tts-debug {
+                margin-top: 20px;
+                font-size: 0.8rem;
+                color: #666;
+            }
+        </style>
     </head>
     <body>
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-            <div class="container-fluid">
-                <!-- Home link on left -->
-                <a class="navbar-brand" href="/"> 🏠 Home </a>
-
-                <!-- Center title -->
-                <div class="navbar-brand mx-auto">Verbal Trainer</div>
-
-                <!-- Empty div to balance the layout -->
-                <div class="navbar-brand invisible">🏠 Home</div>
+            <div class="container">
+                <a class="navbar-brand" href="/">VerbaFlow</a>
             </div>
         </nav>
 
@@ -74,6 +122,7 @@
                     <button
                         class="btn btn-secondary btn-custom ms-2"
                         id="recordButton"
+                        onclick="toggleRecording()"
                     >
                         🎤
                     </button>
@@ -90,35 +139,185 @@
                     ></div>
                     <p>AI is thinking...</p>
                 </div>
+
+                <!-- TTS Debug Area -->
+                <div
+                    id="tts-debug-area"
+                    class="mt-3 p-2 border rounded"
+                    style="display: none"
+                >
+                    <h5>TTS Test Panel</h5>
+                    <div class="mb-2">
+                        <textarea
+                            id="ttsTestText"
+                            class="form-control"
+                            rows="2"
+                        >
+This is a test of the text-to-speech system.</textarea
+                        >
+                    </div>
+                    <div class="mb-2">
+                        <button class="btn btn-primary" onclick="testTTS()">
+                            Test TTS
+                        </button>
+                        <button
+                            class="btn btn-secondary ms-2"
+                            onclick="document.getElementById('tts-debug-area').style.display='none'"
+                        >
+                            Hide
+                        </button>
+                    </div>
+                    <div id="ttsStatus" class="mt-2">Ready to test</div>
+                </div>
+
+                <button
+                    class="btn btn-sm btn-info mt-2"
+                    onclick="document.getElementById('tts-debug-area').style.display='block'"
+                >
+                    Show TTS Test Panel
+                </button>
             </div>
         </div>
 
-        <footer class="footer mt-auto py-3 bg-dark text-light">
-            <div class="container text-center">
-                <p class="mb-0">
-                    © <span id="current-year">2025</span>Verbal Trainer. All
-                    Rights Reserved.
-                </p>
-            </div>
-        </footer>
-
         <script>
+            let audioPlayer = null;
             let mediaRecorder;
             let audioChunks = [];
+
+            function initAudioPlayer() {
+                if (!audioPlayer) {
+                    audioPlayer = new Audio();
+                    console.log("Created audio player");
+
+                    audioPlayer.addEventListener("play", () =>
+                        console.log("Audio playback started"),
+                    );
+                    audioPlayer.addEventListener("ended", () =>
+                        console.log("Audio playback ended"),
+                    );
+                    audioPlayer.addEventListener("error", (e) =>
+                        console.error("Audio error:", e),
+                    );
+                }
+                return audioPlayer;
+            }
+
+            async function speakText(text) {
+                if (!text || text.trim() === "") return false;
+
+                const cleanText = text
+                    .replace(/[*#_]/g, "")
+                    .replace(/\n+/g, " ")
+                    .trim();
+                console.log(
+                    "Speaking text:",
+                    cleanText.substring(0, 30) + "...",
+                );
+
+                const player = initAudioPlayer();
+                const ttsStatus = document.getElementById("ttsStatus");
+
+                if (ttsStatus) {
+                    ttsStatus.textContent = "Generating speech...";
+                }
+
+                try {
+                    const response = await fetch("/tts", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ text: cleanText }),
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(
+                            errorData.error ||
+                                `HTTP error! status: ${response.status}`,
+                        );
+                    }
+
+                    const data = await response.json();
+
+                    if (!data.audioUrl) {
+                        throw new Error("No audio URL in response");
+                    }
+
+                    if (ttsStatus) {
+                        ttsStatus.textContent = "Playing audio...";
+                    }
+
+                    player.src = data.audioUrl + "?t=" + new Date().getTime();
+
+                    try {
+                        await player.play();
+                        console.log("Audio playback started");
+                        return true;
+                    } catch (playError) {
+                        console.error("Audio playback error:", playError);
+
+                        const chatBox = document.getElementById("chat-box");
+                        if (chatBox && playError.name === "NotAllowedError") {
+                            const playButton = document.createElement("button");
+                            playButton.className =
+                                "btn btn-sm btn-warning mt-2";
+                            playButton.innerHTML =
+                                '<i class="fas fa-play"></i> Tap to play audio';
+                            playButton.onclick = function () {
+                                player.play();
+                                this.style.display = "none";
+                            };
+                            chatBox.appendChild(playButton);
+                        }
+
+                        throw playError;
+                    }
+                } catch (error) {
+                    console.error("TTS API error:", error);
+
+                    if (ttsStatus) {
+                        ttsStatus.textContent = "Error: " + error.message;
+                    }
+                    return false;
+                }
+            }
+
+            function testTTS() {
+                const testText = document.getElementById("ttsTestText").value;
+                speakText(testText);
+            }
+
+            function addAIResponseWithTTS(container, text) {
+                const messageDiv = document.createElement("div");
+                messageDiv.className = "chat-message ai-message";
+                messageDiv.innerHTML = `<strong>AI:</strong> ${text}`;
+
+                const speakBtn = document.createElement("button");
+                speakBtn.className =
+                    "btn btn-sm btn-outline-secondary float-end speak-button";
+                speakBtn.innerHTML = '<i class="fas fa-volume-up"></i> Hear AI';
+                speakBtn.addEventListener("click", function () {
+                    speakText(text);
+                });
+
+                messageDiv.appendChild(speakBtn);
+                container.appendChild(messageDiv);
+                container.scrollTop = container.scrollHeight;
+            }
 
             function updateScenario() {
                 let scenario = $("#scenario").val();
                 let scenarioMessages = {
-                    casual: "Hi! Let's have a friendly chat. What’s on your mind today?",
+                    casual: "Hi! Let's have a friendly chat. What's on your mind today?",
                     interview:
                         "Hello! What job role are you preparing for? Let's do a mock interview!",
                     debate: "Let's have a debate! Here are some topics: AI in Education, Climate Change, Social Media Influence. Choose one!",
                     storytelling:
-                        "Tell me a short story idea, and I’ll help you develop it!",
+                        "Tell me a short story idea, and I'll help you develop it!",
                 };
-                $("#chat-box").html(
-                    `<div class="chat-message ai-message"><strong>AI:</strong> ${scenarioMessages[scenario]}</div>`,
-                );
+
+                $("#chat-box").html("");
+                const chatBox = document.getElementById("chat-box");
+                addAIResponseWithTTS(chatBox, scenarioMessages[scenario]);
             }
 
             function sendMessage() {
@@ -137,132 +336,135 @@
                     { user_input: userInput, scenario: scenario },
                     function (data) {
                         $("#loading").hide();
-                        displayAIResponse(data);
+                        addAIResponseWithTTS(
+                            document.getElementById("chat-box"),
+                            data.response,
+                        );
                     },
-                );
+                ).fail(function (error) {
+                    $("#loading").hide();
+                    console.error("Error:", error);
+                    $("#chat-box").append(
+                        `<div class="chat-message error-message"><strong>Error:</strong> Could not send message. Please try again.</div>`,
+                    );
+                });
             }
 
-            function displayAIResponse(data) {
-                let aiMessage = `<div class="chat-message ai-message"><strong>AI:</strong> ${data.response}</div>`;
-                let audioControls = "";
-                if (data.speech) {
-                    audioControls = `
-                    <div class="d-flex align-items-center mt-2">
-                        <button class="btn btn-secondary hear-ai-btn w-75" onclick="toggleAudio(this)" data-audio-url="${data.speech}">
-                            🔊 Hear AI
-                        </button>
-                        <select class="form-select form-select-sm ms-2 voiceSpeed" style="width: 70px;" onchange="updateAudioSpeed(this)">
-                            <option value="1" selected>1x</option>
-                            <option value="1.2">1.2x</option>
-                            <option value="1.5">1.5x</option>
-                        </select>
-                    </div>`;
-                }
-
-                $("#chat-box").append(aiMessage);
-                if (data.speech) $("#chat-box").append(audioControls);
-                $("#chat-box").scrollTop($("#chat-box")[0].scrollHeight);
-            }
-
-            $("#user_input").keypress(function (event) {
-                if (event.which == 13) {
-                    event.preventDefault();
-                    sendMessage();
-                }
-            });
-
-            $("#recordButton").click(async function () {
-                if (!mediaRecorder || mediaRecorder.state === "inactive") {
-                    try {
-                        let stream = await navigator.mediaDevices.getUserMedia({
-                            audio: true,
-                        });
-                        mediaRecorder = new MediaRecorder(stream);
+            function startRecording() {
+                navigator.mediaDevices
+                    .getUserMedia({ audio: true })
+                    .then(function (stream) {
                         audioChunks = [];
+                        mediaRecorder = new MediaRecorder(stream);
 
-                        mediaRecorder.ondataavailable = (event) =>
-                            audioChunks.push(event.data);
-                        mediaRecorder.onstop = async () => {
-                            let audioBlob = new Blob(audioChunks, {
-                                type: "audio/wav",
-                            });
-                            let formData = new FormData();
-                            formData.append(
-                                "audio",
-                                audioBlob,
-                                "voice_message.wav",
-                            );
-
-                            $("#loading").show();
-                            fetch("/assessment_audio", {
-                                method: "POST",
-                                body: formData,
-                            })
-                                .then((response) => response.json())
-                                .then((data) => {
-                                    $("#loading").hide();
-
-                                    // ✅ Display transcribed text
-                                    if (data.transcript) {
-                                        $("#chat-box").append(
-                                            `<div class="chat-message user-message"><strong>You (Voice):</strong> ${data.transcript}</div>`,
-                                        );
-                                    }
-
-                                    // ✅ Display AI feedback properly
-                                    if (data.feedback) {
-                                        $("#chat-box").append(
-                                            `<div class="chat-message ai-message"><strong>AI:</strong> ${data.feedback}</div>`,
-                                        );
-                                    } else {
-                                        $("#chat-box").append(
-                                            `<div class="chat-message ai-message"><strong>AI:</strong> No feedback received.</div>`,
-                                        );
-                                    }
-
-                                    $("#chat-box").scrollTop(
-                                        $("#chat-box")[0].scrollHeight,
-                                    );
-                                })
-                                .catch((error) => {
-                                    $("#loading").hide();
-                                    alert("Error processing voice input.");
-                                });
-                        };
+                        mediaRecorder.addEventListener(
+                            "dataavailable",
+                            function (event) {
+                                audioChunks.push(event.data);
+                            },
+                        );
 
                         mediaRecorder.start();
                         $("#recordButton").text("⏹ Stop");
-                    } catch (error) {
+                        $("#recordButton")
+                            .removeClass("btn-secondary")
+                            .addClass("btn-danger");
+                    })
+                    .catch(function (err) {
+                        console.error("Error accessing microphone:", err);
                         alert(
-                            "Microphone access denied. Please allow microphone permissions.",
+                            "Could not access microphone. Please check your permissions.",
                         );
-                    }
-                } else {
+                    });
+            }
+
+            function stopRecording() {
+                if (mediaRecorder) {
                     mediaRecorder.stop();
                     $("#recordButton").text("🎤");
+                    $("#recordButton")
+                        .removeClass("btn-danger")
+                        .addClass("btn-secondary");
+                    $("#loading").show();
+
+                    const scenario = $("#scenario").val() || "casual";
+                    mediaRecorder.stream
+                        .getTracks()
+                        .forEach((track) => track.stop());
+
+                    const handleStopEvent = function () {
+                        const audioBlob = new Blob(audioChunks, {
+                            type: "audio/webm",
+                        });
+                        const formData = new FormData();
+                        formData.append("audio", audioBlob);
+                        formData.append("scenario", scenario);
+
+                        $.ajax({
+                            url: "/chat_voice",
+                            type: "POST",
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            success: function (response) {
+                                $("#loading").hide();
+
+                                if (response.error) {
+                                    console.error("Error:", response.error);
+                                    $("#chat-box").append(
+                                        `<div class="chat-message error-message"><strong>Error:</strong> ${response.error}</div>`,
+                                    );
+                                } else {
+                                    if (response.transcript) {
+                                        $("#chat-box").append(
+                                            `<div class="chat-message user-message"><strong>You (Voice):</strong> ${response.transcript}</div>`,
+                                        );
+                                    }
+                                    addAIResponseWithTTS(
+                                        document.getElementById("chat-box"),
+                                        response.response,
+                                    );
+                                }
+                            },
+                            error: function (error) {
+                                $("#loading").hide();
+                                console.error("Audio processing error:", error);
+                                $("#chat-box").append(
+                                    `<div class="chat-message error-message"><strong>Error:</strong> Could not process audio. Please try again.</div>`,
+                                );
+                            },
+                        });
+
+                        audioChunks = [];
+                    };
+
+                    mediaRecorder.addEventListener("stop", handleStopEvent, {
+                        once: true,
+                    });
                 }
+            }
+
+            function toggleRecording() {
+                if (mediaRecorder && mediaRecorder.state === "recording") {
+                    stopRecording();
+                } else {
+                    startRecording();
+                }
+            }
+
+            $(document).ready(function () {
+                initAudioPlayer();
+                updateScenario();
+
+                $("#user_input").on("keypress", function (e) {
+                    if (e.which === 13) {
+                        sendMessage();
+                        return false;
+                    }
+                });
+
+                $("#scenario").on("change", updateScenario);
             });
-
-            function toggleAudio(button) {
-                let audioUrl = button.getAttribute("data-audio-url");
-                if (!audioUrl) return;
-
-                let speedSelector = button.nextElementSibling;
-                let speed = parseFloat(speedSelector.value);
-
-                let audio = new Audio(audioUrl);
-                audio.playbackRate = speed;
-                audio.play();
-
-                button.innerText = "⏹ Stop AI";
-                audio.onended = function () {
-                    button.innerText = "🔊 Hear AI";
-                };
-            }
-
-            function updateAudioSpeed(select) {
-                if (audio) audio.playbackRate = parseFloat(select.value);
-            }
         </script>
     </body>
 </html>
