@@ -47,7 +47,7 @@ function sendMessage() {
 }
 
 function displayAIResponse(data) {
-  let aiResponse = data.feedback || "**AI did not return feedback.**";
+  let aiResponse = data.feedback || "AI did not return feedback.";
 
   // ✅ Convert Markdown to HTML using `marked.js`
   let formattedResponse = marked.parse(aiResponse);
@@ -190,3 +190,26 @@ async function uploadAudio() {
     alert("Error processing the audio.");
   }
 }
+
+// function updateScores(data) {
+//   if (!data.scores) {
+//     console.error("❌ No scores received from the server!");
+//     return;
+//   }
+
+//   let structure = data.scores.structure || 0;
+//   let delivery = data.scores.delivery || 0;
+//   let content = data.scores.content || 0;
+
+//   $("#structure_score")
+//     .css("width", `${structure * 10}%`)
+//     .text(`Structure: ${structure}/10`);
+
+//   $("#delivery_score")
+//     .css("width", `${delivery * 10}%`)
+//     .text(`Delivery: ${delivery}/10`);
+
+//   $("#content_score")
+//     .css("width", `${content * 10}%`)
+//     .text(`Content: ${content}/10`);
+// }
