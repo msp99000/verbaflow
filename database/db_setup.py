@@ -1,64 +1,94 @@
-import sqlite3
+import sqlite3 
+import os
+from datetime import datetime
 
 DB_PATH = "database/user_data.db"
 
+#DB_PATH = os.path.join(os.path.dirname(__file__), 'user_data.db')
+
 def init_db():
-    """Initializes the SQLite database and creates tables if they don't exist."""
+    """Creates the database tables if they don't exist."""
     try:
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS user_progress (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    session_id TEXT NOT NULL,
-                    module_type TEXT NOT NULL,
-                    user_input TEXT DEFAULT '',
-                    ai_feedback TEXT DEFAULT '',
-                    score REAL DEFAULT 0,
-                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            conn.commit()
-        print("✅ Database initialized successfully.")
+        conn = sqlite3.connect('user_data.db')
+        cursor = conn.cursor()
+        
+        # Create table for user responses
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_responses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id TEXT NOT NULL,
+                module_type TEXT NOT NULL,
+                user_input TEXT,
+                ai_feedback TEXT,
+                score REAL DEFAULT 0,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        conn.commit()
+        conn.close()
+        print("Database initialized successfully")
+        return True
     except Exception as e:
-        print(f"⚠️ Database Initialization Error: {e}")
+        print(f"Error initializing database: {str(e)}")
+        return False
 
-def save_user_response(session_id, module, user_input, feedback, score):
-    """Saves the user's training session and AI feedback to the database."""
+def save_user_response(session_id, module_type, user_input, ai_feedback, score=0):
+    """Saves a user's response and AI feedback to the database."""
     try:
-        if not session_id or not module:
-            print("⚠️ Error: Missing required fields (session_id, module)")
-            return
-
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO user_progress (session_id, module_type, user_input, ai_feedback, score)
-                VALUES (?, ?, ?, ?, ?)
-            """, (session_id, module, user_input or "N/A", feedback or "No feedback", score or 0))
-            conn.commit()
-        print(f"✅ Data saved for session: {session_id} | Module: {module}")
+        conn = sqlite3.connect('user_data.db')
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            INSERT INTO user_responses 
+            (session_id, module_type, user_input, ai_feedback, score, timestamp) 
+            VALUES (?, ?, ?, ?, ?, datetime('now'))
+        """, (session_id, module_type, user_input, ai_feedback, score))
+        
+        conn.commit()
+        conn.close()
+        print(f"Saved user response for session {session_id}, module {module_type}")
+        return True
     except Exception as e:
-        print(f"⚠️ Database Save Error: {e}")
+        print(f"Error saving user response: {str(e)}")
+        return False
 
 def get_user_progress(session_id):
-    """Retrieves all past training sessions for a given user session."""
+    """Retrieves all training responses for a user."""
     try:
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT module_type, user_input, ai_feedback, score, timestamp
-                FROM user_progress WHERE session_id = ?
-                ORDER BY timestamp DESC
-            """, (session_id,))
-            progress = cursor.fetchall()
-
-        if not progress:
-            print(f"⚠️ No progress data found for session: {session_id}")
-            return []
-
-        print(f"✅ Retrieved {len(progress)} records for session: {session_id}")
-        return progress
+        conn = sqlite3.connect('user_data.db')
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Debug: Print query and session_id
+        print(f"Executing query with session_id: {session_id}")
+        
+        cursor.execute("""
+            SELECT module_type, user_input, ai_feedback, score, 
+                   datetime(timestamp, 'localtime') as timestamp
+            FROM user_responses
+            WHERE session_id = ?
+            ORDER BY timestamp DESC
+        """, (session_id,))
+        
+        rows = cursor.fetchall()
+        
+        # Debug: Print number of rows retrieved
+        print(f"Retrieved {len(rows)} rows from database")
+        
+        # Convert to list of dictionaries
+        result = []
+        for row in rows:
+            result.append({
+                'module_type': row['module_type'],
+                'user_input': row['user_input'],
+                'ai_feedback': row['ai_feedback'],
+                'score': row['score'],
+                'timestamp': row['timestamp']
+            })
+        
+        conn.close()
+        return result
     except Exception as e:
-        print(f"⚠️ Database Query Error: {e}")
+        print(f"Database error in get_user_progress: {str(e)}")
         return []
