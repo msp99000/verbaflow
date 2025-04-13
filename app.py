@@ -1,5 +1,6 @@
 import os
 import json
+import requests
 from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 from database.db_setup import get_user_progress, init_db, save_user_response
@@ -7,6 +8,7 @@ from modules.training_modules import run_training_module  # Import the missing f
 from modules.llm_wrapper import customLLMBot, chatVoiceBot
 from modules.speech_processing import transcribe_audio
 from datetime import datetime
+from waitress import serve
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -48,7 +50,6 @@ def chat_audio():
     try:
         audio_file = request.files.get('audio')
         scenario = request.form.get('scenario', 'casual')
-        session_id = request.remote_addr
 
         print(f"Received audio chat request with scenario: {scenario}")
 
@@ -84,7 +85,6 @@ def chat_voice():
     try:
         audio_file = request.files.get('audio')
         scenario = request.form.get('scenario', 'casual')
-        session_id = request.remote_addr
 
         print(f"Received voice chat request with scenario: {scenario}")
 
@@ -549,4 +549,5 @@ def text_to_speech():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    serve(app, host="0.0.0.0", port=8080)
+    # app.run(debug=True)
