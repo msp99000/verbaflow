@@ -1,5 +1,9 @@
 # VerbaFlow - Verbal Communication Skills Trainer
 
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![Flask](https://img.shields.io/badge/flask-2.3-green)
+![License](https://img.shields.io/badge/license-MIT-red)
+
 ## 📌 Overview
 VerbaFlow is an AI-powered Verbal Communication Skills Trainer designed to help users improve their speaking abilities through interactive chat, voice processing, and structured training activities. The application integrates with **Groq API** for AI-based feedback and **VoiceRSS** for text-to-speech conversion.
 
