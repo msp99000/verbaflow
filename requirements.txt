@@ -5,3 +5,5 @@ gTTS==2.5.4
 pydub==0.25.1
 python-dotenv==1.1.0
 speechrecognition==3.14.2
+requests==2.32.2
+waitress=3.0.2
