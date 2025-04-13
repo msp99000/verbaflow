@@ -40,6 +40,8 @@ def transcribe_audio(audio_file):
     except Exception as e:
         return f"Error: {str(e)}"
 
+
+
 def synthesize_speech(text, speed="normal"):
     """Converts text to speech with adjustable speed and saves it as an MP3 file."""
     if not text.strip():
